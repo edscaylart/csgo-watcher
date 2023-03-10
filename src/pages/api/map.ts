@@ -7,7 +7,7 @@ export default async function handle(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  if (req.body.map) {
+  if (req.body.map && typeof req.body.map === 'object') {
     const { team_ct, team_t, mode, name, round } = req.body.map;
 
     let body = {
