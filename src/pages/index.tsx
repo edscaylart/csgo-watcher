@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { GetServerSideProps } from 'next'
-import prisma from '../lib/prisma'
 import { utcToZonedTime } from 'date-fns-tz'
 import { format, compareAsc } from 'date-fns'
+import { supabase } from '@/lib/initSupabase'
 
 type Props = {
   map: {
@@ -11,15 +11,20 @@ type Props = {
     "round": number;
     "team_ct_score": number;
     "team_tr_score": number;
-    "updatedAt": Date;
+    "updated_at": Date;
   }
 }
 
 const Blog: React.FC<Props> = (props) => {
-  const date = new Date(props.map.updatedAt)
-  const timeZone = 'America/Sao_Paulo'
-  const zonedDate = utcToZonedTime(date, timeZone)
-  const formattedDate = format(zonedDate, 'dd/MM/yyyy HH:mm:ss')
+  const formattedDate = useMemo(() => {
+    if (!props.map?.updated_at) return '';
+
+    const date = new Date(props.map.updated_at)
+    const timeZone = 'America/Sao_Paulo'
+    const zonedDate = utcToZonedTime(date, timeZone)
+    const formattedDate = format(zonedDate, 'dd/MM/yyyy HH:mm:ss')
+    return formattedDate;
+  }, [ props.map])
 
   return (
   <>
@@ -51,13 +56,13 @@ const Blog: React.FC<Props> = (props) => {
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
-  const map = await prisma.map.findFirst({
-    orderBy: {
-      updatedAt: 'desc'
-    }
-  })
+  let { data } = await supabase.from('maps')
+    .select()
+    .order('updated_at', { ascending: false })
+    .limit(1)
+
   return {
-    props: { map },
+    props: { map: data?.length ? data[0] : {} },
   }
 }
 
